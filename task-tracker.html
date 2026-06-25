@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Task Tracker</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.31.0/dist/tabler-icons.min.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-tertiary: #f0efe9;
+    --text: #1a1a18;
+    --text-secondary: #6b6b66;
+    --text-tertiary: #9e9e99;
+    --border: rgba(0,0,0,0.12);
+    --border-medium: rgba(0,0,0,0.22);
+    --accent: #1D9E75;
+    --accent-dark: #0F6E56;
+    --accent-bg: #e1f5ee;
+    --danger: #c0392b;
+    --danger-bg: #fcecea;
+    --info: #185FA5;
+    --info-bg: #e6f1fb;
+    --radius: 8px;
+    --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2d2d2a;
+      --text: #f0efeb;
+      --text-secondary: #9e9e96;
+      --text-tertiary: #6b6b66;
+      --border: rgba(255,255,255,0.1);
+      --border-medium: rgba(255,255,255,0.2);
+      --accent: #5DCAA5;
+      --accent-dark: #9FE1CB;
+      --accent-bg: #04342c;
+      --danger: #f09595;
+      --danger-bg: #501313;
+      --info: #85B7EB;
+      --info-bg: #042c53;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  .app-shell {
+    display: grid;
+    grid-template-columns: 1fr 300px;
+    grid-template-rows: auto 1fr;
+    min-height: 100vh;
+    max-width: 1100px;
+    margin: 0 auto;
+    background: var(--bg);
+    box-shadow: 0 0 0 0.5px var(--border);
+  }
+
+  /* Top bar */
+  .topbar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 1.5rem;
+    height: 54px;
+    border-bottom: 0.5px solid var(--border);
+    background: var(--bg);
+  }
+  .topbar-title {
+    font-size: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text);
+  }
+  .topbar-title i { color: var(--accent); font-size: 18px; }
+  .topbar-date { font-size: 13px; color: var(--text-tertiary); }
+
+  /* Left: projects */
+  .left {
+    padding: 1.5rem;
+    border-right: 0.5px solid var(--border);
+    overflow-y: auto;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+  }
+  .btn-ghost {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border: 0.5px solid var(--border-medium);
+    border-radius: var(--radius);
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    font-family: inherit;
+    transition: background 0.12s;
+  }
+  .btn-ghost:hover { background: var(--bg-secondary); }
+
+  /* Project card */
+  .project-card {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg);
+    margin-bottom: 0.875rem;
+    overflow: hidden;
+  }
+  .project-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.875rem 1rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .project-head:hover { background: var(--bg-secondary); }
+  .proj-left { display: flex; align-items: center; gap: 9px; flex: 1; min-width: 0; }
+  .proj-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .proj-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .proj-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .deadline-badge {
+    font-size: 11px;
+    padding: 2px 7px;
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .deadline-badge.urgent { color: var(--danger); background: var(--danger-bg); border-color: var(--danger); }
+  .proj-count { font-size: 12px; color: var(--text-tertiary); white-space: nowrap; }
+  .chevron { font-size: 14px; color: var(--text-tertiary); transition: transform 0.2s; flex-shrink: 0; }
+  .chevron.open { transform: rotate(180deg); }
+
+  .progress-strip { height: 2px; background: var(--bg-tertiary); }
+  .progress-fill { height: 2px; background: var(--accent); transition: width 0.3s; }
+
+  .project-body { padding: 0.5rem 1rem 0.875rem; }
+  .task-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+  }
+  .cb {
+    width: 16px; height: 16px;
+    border: 1.5px solid var(--border-medium);
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.12s;
+  }
+  .cb.done { background: var(--accent); border-color: var(--accent); }
+  .cb.done::after {
+    content: '';
+    width: 4px; height: 7px;
+    border: 1.5px solid #fff;
+    border-top: none; border-left: none;
+    transform: rotate(45deg) translateY(-1px);
+    display: block;
+  }
+  .task-label {
+    flex: 1;
+    font-size: 13px;
+    color: var(--text);
+    cursor: default;
+  }
+  .task-label.done { color: var(--text-tertiary); text-decoration: line-through; }
+  .focus-btn {
+    opacity: 0;
+    font-size: 11px;
+    padding: 2px 7px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius);
+    background: transparent;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    font-family: inherit;
+    transition: opacity 0.12s;
+    white-space: nowrap;
+  }
+  .task-row:hover .focus-btn { opacity: 1; }
+  .focus-btn:hover { background: var(--info-bg); color: var(--info); border-color: var(--info); }
+  .focus-btn.active { opacity: 1; background: var(--info-bg); color: var(--info); border-color: var(--info); }
+  .del-btn {
+    opacity: 0;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-tertiary); font-size: 13px; padding: 2px 3px;
+    font-family: inherit; display: flex; align-items: center;
+  }
+  .task-row:hover .del-btn { opacity: 1; }
+  .del-btn:hover { color: var(--danger); }
+
+  .add-task-wrap { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 2px 0; }
+  .add-task-inp {
+    flex: 1; background: transparent; border: none;
+    border-bottom: 0.5px solid var(--border); padding: 4px 0;
+    font-size: 13px; color: var(--text); font-family: inherit; outline: none;
+  }
+  .add-task-inp::placeholder { color: var(--text-tertiary); }
+  .add-task-inp:focus { border-bottom-color: var(--accent); }
+
+  .delete-proj-btn {
+    font-size: 12px; padding: 2px 6px; border: 0.5px solid var(--border);
+    border-radius: var(--radius); background: transparent; cursor: pointer;
+    color: var(--text-tertiary); font-family: inherit; opacity: 0;
+  }
+  .project-head:hover .delete-proj-btn { opacity: 1; }
+  .delete-proj-btn:hover { color: var(--danger); border-color: var(--danger); }
+
+  /* Right: timer + focus queue */
+  .right {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-left: 0.5px solid var(--border);
+    overflow-y: auto;
+  }
+  .panel-label {
+    font-size: 11px; font-weight: 500; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 0.875rem;
+  }
+
+  /* Pomodoro */
+  .pom-card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem;
+    text-align: center;
+    margin-bottom: 1.25rem;
+  }
+  .pom-context { font-size: 12px; color: var(--text-tertiary); margin-bottom: 4px; min-height: 16px; }
+  .pom-task-name { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 1rem; min-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .pom-time {
+    font-size: 48px; font-weight: 400; letter-spacing: 3px;
+    font-variant-numeric: tabular-nums; margin-bottom: 1rem;
+    color: var(--text); transition: color 0.3s;
+  }
+  .pom-time.running { color: var(--accent); }
+  .pom-time.on-break { color: var(--info); }
+  .pom-controls { display: flex; justify-content: center; gap: 8px; margin-bottom: 1rem; }
+  .btn-start {
+    display: flex; align-items: center; gap: 6px;
+    padding: 8px 20px; border-radius: var(--radius);
+    background: var(--accent); border: none; color: #fff;
+    cursor: pointer; font-size: 13px; font-family: inherit; font-weight: 500;
+    transition: background 0.12s;
+  }
+  .btn-start:hover { background: var(--accent-dark); }
+  .btn-reset {
+    display: flex; align-items: center; justify-content: center;
+    width: 36px; height: 36px;
+    border: 0.5px solid var(--border-medium); border-radius: var(--radius);
+    background: transparent; cursor: pointer; color: var(--text-secondary);
+    font-size: 16px; transition: background 0.12s;
+  }
+  .btn-reset:hover { background: var(--bg-secondary); }
+  .pom-modes { display: flex; gap: 4px; justify-content: center; margin-bottom: 0.75rem; }
+  .mode-btn {
+    padding: 3px 10px; border: 0.5px solid var(--border); border-radius: var(--radius);
+    background: transparent; cursor: pointer; font-size: 12px;
+    font-family: inherit; color: var(--text-tertiary);
+    transition: all 0.12s;
+  }
+  .mode-btn.active { background: var(--bg-tertiary); color: var(--text); border-color: var(--border-medium); }
+  .pom-sessions { font-size: 12px; color: var(--text-tertiary); }
+  .session-dots { display: flex; gap: 4px; justify-content: center; margin-top: 6px; flex-wrap: wrap; }
+  .session-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); opacity: 0.3; }
+  .session-dot.filled { opacity: 1; }
+
+  /* Focus queue */
+  .focus-queue { display: flex; flex-direction: column; gap: 6px; }
+  .queue-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 10px; background: var(--bg);
+    border: 0.5px solid var(--border); border-radius: var(--radius);
+    cursor: pointer; transition: border-color 0.12s;
+  }
+  .queue-item:hover { border-color: var(--border-medium); }
+  .queue-item.active { border-color: var(--accent); }
+  .q-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .q-text { flex: 1; }
+  .q-task { font-size: 13px; color: var(--text); }
+  .q-proj { font-size: 11px; color: var(--text-tertiary); margin-top: 1px; }
+  .empty-state { font-size: 13px; color: var(--text-tertiary); text-align: center; padding: 1.25rem 0; line-height: 1.6; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+    display: none; align-items: center; justify-content: center; z-index: 200;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--bg); border-radius: var(--radius-lg);
+    border: 0.5px solid var(--border-medium); padding: 1.5rem;
+    width: 340px; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+  }
+  .modal-box h3 { font-size: 16px; font-weight: 500; margin-bottom: 1.25rem; }
+  .field { margin-bottom: 1rem; }
+  .field label { font-size: 12px; color: var(--text-secondary); display: block; margin-bottom: 5px; }
+  .field input {
+    width: 100%; padding: 7px 10px;
+    border: 0.5px solid var(--border-medium); border-radius: var(--radius);
+    font-size: 14px; font-family: inherit;
+    background: var(--bg); color: var(--text); outline: none;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .modal-btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 0.25rem; }
+  .modal-btns button {
+    padding: 7px 16px; border-radius: var(--radius);
+    border: 0.5px solid var(--border-medium); background: transparent;
+    cursor: pointer; font-size: 13px; font-family: inherit; color: var(--text);
+  }
+  .modal-btns .btn-confirm { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .modal-btns .btn-confirm:hover { background: var(--accent-dark); }
+
+  /* Notification toast */
+  .toast {
+    position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+    background: var(--text); color: var(--bg); padding: 10px 20px;
+    border-radius: var(--radius-lg); font-size: 13px; font-weight: 500;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 300;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <header class="topbar">
+    <div class="topbar-title">
+      <i class="ti ti-layout-kanban"></i>
+      Task Tracker
+    </div>
+    <span class="topbar-date" id="topbar-date"></span>
+  </header>
+
+  <main class="left">
+    <div class="section-header">
+      <span class="section-label">Projects</span>
+      <button class="btn-ghost" onclick="openModal()">
+        <i class="ti ti-plus"></i> New project
+      </button>
+    </div>
+    <div id="projects-container"></div>
+  </main>
+
+  <aside class="right">
+    <p class="panel-label">Pomodoro timer</p>
+    <div class="pom-card">
+      <div class="pom-context" id="pom-context">No task selected</div>
+      <div class="pom-task-name" id="pom-task-name">&nbsp;</div>
+      <div class="pom-time" id="pom-time">25:00</div>
+      <div class="pom-controls">
+        <button class="btn-start" id="btn-start" onclick="toggleTimer()">
+          <i class="ti ti-player-play" id="start-icon"></i>
+          <span id="start-label">Start</span>
+        </button>
+        <button class="btn-reset" onclick="resetTimer()" title="Reset timer">
+          <i class="ti ti-refresh"></i>
+        </button>
+      </div>
+      <div class="pom-modes">
+        <button class="mode-btn active" onclick="setMode(this,'focus',25)">Focus 25m</button>
+        <button class="mode-btn" onclick="setMode(this,'short',5)">Break 5m</button>
+        <button class="mode-btn" onclick="setMode(this,'long',15)">Break 15m</button>
+      </div>
+      <div class="pom-sessions" id="pom-sessions">0 sessions today</div>
+      <div class="session-dots" id="session-dots"></div>
+    </div>
+
+    <p class="panel-label">Focus queue</p>
+    <div class="focus-queue" id="focus-queue">
+      <div class="empty-state">Hit "Focus" on any task<br>to add it here</div>
+    </div>
+  </aside>
+</div>
+
+<!-- New project modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal-box">
+    <h3>New project</h3>
+    <div class="field">
+      <label>Project name</label>
+      <input id="inp-proj-name" placeholder="e.g. History essay" />
+    </div>
+    <div class="field">
+      <label>Deadline</label>
+      <input id="inp-proj-deadline" type="date" />
+    </div>
+    <div class="modal-btns">
+      <button onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" onclick="addProject()">Add project</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const COLORS = ['#534AB7','#0F6E56','#993C1D','#185FA5','#993556','#3B6D11','#854F0B','#0C447C','#A32D2D'];
+const COLOR_LIGHT = ['#AFA9EC','#5DCAA5','#F0997B','#85B7EB','#ED93B1','#97C459','#EF9F27','#85B7EB','#F09595'];
+
+function todayStr() {
+  return new Date().toISOString().slice(0,10);
+}
+function daysFromNow(d) {
+  const dt = new Date(); dt.setDate(dt.getDate()+d);
+  return dt.toISOString().slice(0,10);
+}
+function daysUntil(s) {
+  const now = new Date(); now.setHours(0,0,0,0);
+  const then = new Date(s); then.setHours(0,0,0,0);
+  return Math.round((then-now)/(864e5));
+}
+function deadlineBadge(s) {
+  const d = daysUntil(s);
+  if (d < 0) return { text: 'Overdue', urgent: true };
+  if (d === 0) return { text: 'Due today', urgent: true };
+  if (d === 1) return { text: 'Due tomorrow', urgent: true };
+  if (d <= 3) return { text: `Due in ${d} days`, urgent: true };
+  return { text: `Due ${d} days`, urgent: false };
+}
+
+const DEFAULT_PROJECTS = [
+  { id: 1, name: 'History essay', deadline: daysFromNow(4), colorIdx: 0, open: true, tasks: [
+    { id: 1, text: 'Pick thesis statement', done: false },
+    { id: 2, text: 'Find 3 primary sources', done: false },
+    { id: 3, text: 'Write intro paragraph', done: false },
+    { id: 4, text: 'Write body section 1', done: false },
+  ]},
+  { id: 2, name: 'Math assignment', deadline: daysFromNow(2), colorIdx: 3, open: true, tasks: [
+    { id: 1, text: 'Problems 1–10', done: true },
+    { id: 2, text: 'Problems 11–20', done: false },
+    { id: 3, text: 'Review with textbook examples', done: false },
+  ]},
+  { id: 3, name: 'Group project slides', deadline: daysFromNow(10), colorIdx: 4, open: false, tasks: [
+    { id: 1, text: 'Assign slide sections', done: false },
+    { id: 2, text: 'Draft my slides', done: false },
+    { id: 3, text: 'Add visuals', done: false },
+  ]},
+];
+
+let state = load();
+
+function load() {
+  try {
+    const saved = localStorage.getItem('task-tracker-v1');
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return {
+    projects: JSON.parse(JSON.stringify(DEFAULT_PROJECTS)),
+    nextProjectId: 4,
+    focusProjId: null,
+    focusTaskId: null,
+    sessions: 0,
+    sessionsDate: todayStr(),
+  };
+}
+
+function save() {
+  try { localStorage.setItem('task-tracker-v1', JSON.stringify(state)); } catch(e) {}
+}
+
+// Reset sessions count each new day
+if (state.sessionsDate !== todayStr()) {
+  state.sessions = 0;
+  state.sessionsDate = todayStr();
+  save();
+}
+
+// Timer state (not persisted)
+let timer = { running: false, seconds: 25*60, totalMins: 25, mode: 'focus', interval: null };
+
+function render() {
+  const container = document.getElementById('projects-container');
+  container.innerHTML = '';
+
+  state.projects.forEach(proj => {
+    const done = proj.tasks.filter(t=>t.done).length;
+    const total = proj.tasks.length;
+    const pct = total ? Math.round(done/total*100) : 0;
+    const dl = deadlineBadge(proj.deadline);
+    const color = COLORS[proj.colorIdx % COLORS.length];
+
+    const card = document.createElement('div');
+    card.className = 'project-card';
+    card.innerHTML = `
+      <div class="project-head" onclick="toggleProject(${proj.id})">
+        <div class="proj-left">
+          <div class="proj-dot" style="background:${color}"></div>
+          <span class="proj-name">${esc(proj.name)}</span>
+          <span class="deadline-badge${dl.urgent?' urgent':''}">${dl.text}</span>
+        </div>
+        <div class="proj-right">
+          <span class="proj-count">${done}/${total}</span>
+          <button class="delete-proj-btn" onclick="event.stopPropagation();deleteProject(${proj.id})" title="Delete project"><i class="ti ti-trash"></i></button>
+          <i class="ti ti-chevron-down chevron${proj.open?' open':''}"></i>
+        </div>
+      </div>
+      <div class="progress-strip"><div class="progress-fill" style="width:${pct}%"></div></div>
+      ${proj.open ? `
+      <div class="project-body">
+        <div id="tasklist-${proj.id}">
+          ${proj.tasks.map(t => renderTask(proj, t)).join('')}
+        </div>
+        <div class="add-task-wrap">
+          <input class="add-task-inp" id="inp-task-${proj.id}" placeholder="+ Add task…" onkeydown="handleAddTask(event,${proj.id})" />
+        </div>
+      </div>` : ''}
+    `;
+    container.appendChild(card);
+  });
+
+  renderRight();
+  save();
+}
+
+function renderTask(proj, t) {
+  const isActive = state.focusProjId === proj.id && state.focusTaskId === t.id;
+  return `
+    <div class="task-row" id="taskrow-${proj.id}-${t.id}">
+      <div class="cb${t.done?' done':''}" onclick="toggleTask(${proj.id},${t.id})" role="checkbox" aria-checked="${t.done}" aria-label="${esc(t.text)}"></div>
+      <span class="task-label${t.done?' done':''}">${esc(t.text)}</span>
+      ${!t.done ? `<button class="focus-btn${isActive?' active':''}" onclick="pinTask(${proj.id},${t.id})">${isActive?'▶ Focused':'Focus'}</button>` : ''}
+      <button class="del-btn" onclick="deleteTask(${proj.id},${t.id})" title="Remove"><i class="ti ti-x"></i></button>
+    </div>`;
+}
+
+function renderRight() {
+  // Focus queue
+  const queue = document.getElementById('focus-queue');
+  const pinned = [];
+  state.projects.forEach(proj => {
+    if (state.focusProjId === proj.id) {
+      const t = proj.tasks.find(t=>t.id===state.focusTaskId && !t.done);
+      if (t) pinned.push({proj, t});
+    }
+  });
+  if (pinned.length === 0) {
+    queue.innerHTML = '<div class="empty-state">Hit "Focus" on any task<br>to add it here</div>';
+  } else {
+    queue.innerHTML = pinned.map(({proj,t}) => {
+      const dot = COLOR_LIGHT[proj.colorIdx % COLOR_LIGHT.length];
+      const isActive = state.focusProjId===proj.id && state.focusTaskId===t.id;
+      return `<div class="queue-item${isActive?' active':''}" onclick="pinTask(${proj.id},${t.id})">
+        <div class="q-dot" style="background:${dot}"></div>
+        <div class="q-text">
+          <div class="q-task">${esc(t.text)}</div>
+          <div class="q-proj">${esc(proj.name)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // Pomodoro label
+  const ctx = document.getElementById('pom-context');
+  const tname = document.getElementById('pom-task-name');
+  if (state.focusProjId !== null) {
+    const proj = state.projects.find(p=>p.id===state.focusProjId);
+    const t = proj && proj.tasks.find(t=>t.id===state.focusTaskId && !t.done);
+    if (t) {
+      ctx.textContent = 'Focusing on:';
+      tname.textContent = t.text;
+    } else {
+      ctx.textContent = 'No task selected';
+      tname.innerHTML = '&nbsp;';
+    }
+  } else {
+    ctx.textContent = 'No task selected';
+    tname.innerHTML = '&nbsp;';
+  }
+
+  // Sessions
+  document.getElementById('pom-sessions').textContent = `${state.sessions} session${state.sessions===1?'':'s'} today`;
+  const dots = document.getElementById('session-dots');
+  const shown = Math.min(state.sessions, 8);
+  dots.innerHTML = Array.from({length: shown}, (_,i) => `<div class="session-dot filled"></div>`).join('');
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function toggleProject(id) {
+  const p = state.projects.find(p=>p.id===id);
+  if (p) p.open = !p.open;
+  render();
+}
+
+function toggleTask(projId, taskId) {
+  const p = state.projects.find(p=>p.id===projId);
+  if (!p) return;
+  const t = p.tasks.find(t=>t.id===taskId);
+  if (!t) return;
+  t.done = !t.done;
+  if (t.done && state.focusProjId===projId && state.focusTaskId===taskId) {
+    state.focusProjId = null; state.focusTaskId = null;
+    showToast('Task complete! Pick your next one.');
+  }
+  render();
+}
+
+function deleteTask(projId, taskId) {
+  const p = state.projects.find(p=>p.id===projId);
+  if (!p) return;
+  p.tasks = p.tasks.filter(t=>t.id!==taskId);
+  if (state.focusProjId===projId && state.focusTaskId===taskId) {
+    state.focusProjId = null; state.focusTaskId = null;
+  }
+  render();
+}
+
+function deleteProject(id) {
+  if (!confirm('Delete this project and all its tasks?')) return;
+  state.projects = state.projects.filter(p=>p.id!==id);
+  if (state.focusProjId === id) { state.focusProjId = null; state.focusTaskId = null; }
+  render();
+}
+
+function handleAddTask(e, projId) {
+  if (e.key !== 'Enter') return;
+  const inp = document.getElementById('inp-task-'+projId);
+  const text = inp.value.trim();
+  if (!text) return;
+  const p = state.projects.find(p=>p.id===projId);
+  const newId = p.tasks.length ? Math.max(...p.tasks.map(t=>t.id))+1 : 1;
+  p.tasks.push({ id: newId, text, done: false });
+  inp.value = '';
+  render();
+  setTimeout(()=>{ const el = document.getElementById('inp-task-'+projId); if(el) el.focus(); }, 10);
+}
+
+function pinTask(projId, taskId) {
+  if (state.focusProjId===projId && state.focusTaskId===taskId) {
+    state.focusProjId = null; state.focusTaskId = null;
+  } else {
+    state.focusProjId = projId; state.focusTaskId = taskId;
+  }
+  render();
+}
+
+// Pomodoro
+function updateTimerDisplay() {
+  const m = Math.floor(timer.seconds/60);
+  const s = timer.seconds%60;
+  const el = document.getElementById('pom-time');
+  el.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  el.className = 'pom-time' + (timer.running ? (timer.mode==='focus'?' running':' on-break') : '');
+}
+
+function toggleTimer() {
+  if (timer.running) {
+    clearInterval(timer.interval);
+    timer.running = false;
+    document.getElementById('start-icon').className = 'ti ti-player-play';
+    document.getElementById('start-label').textContent = 'Start';
+  } else {
+    timer.running = true;
+    document.getElementById('start-icon').className = 'ti ti-player-pause';
+    document.getElementById('start-label').textContent = 'Pause';
+    timer.interval = setInterval(() => {
+      if (timer.seconds <= 0) {
+        clearInterval(timer.interval);
+        timer.running = false;
+        document.getElementById('start-icon').className = 'ti ti-player-play';
+        document.getElementById('start-label').textContent = 'Start';
+        if (timer.mode === 'focus') {
+          state.sessions++;
+          state.sessionsDate = todayStr();
+          save();
+          showToast('Session complete! Take a break.');
+        } else {
+          showToast('Break over — ready to focus?');
+        }
+        timer.seconds = timer.totalMins * 60;
+        updateTimerDisplay();
+        renderRight();
+        return;
+      }
+      timer.seconds--;
+      updateTimerDisplay();
+    }, 1000);
+  }
+  updateTimerDisplay();
+}
+
+function resetTimer() {
+  clearInterval(timer.interval);
+  timer.running = false;
+  timer.seconds = timer.totalMins * 60;
+  document.getElementById('start-icon').className = 'ti ti-player-play';
+  document.getElementById('start-label').textContent = 'Start';
+  updateTimerDisplay();
+}
+
+function setMode(btn, mode, mins) {
+  clearInterval(timer.interval);
+  timer.running = false; timer.mode = mode; timer.totalMins = mins; timer.seconds = mins*60;
+  document.getElementById('start-icon').className = 'ti ti-player-play';
+  document.getElementById('start-label').textContent = 'Start';
+  document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  updateTimerDisplay();
+}
+
+// Modal
+function openModal() {
+  document.getElementById('modal').classList.add('open');
+  document.getElementById('inp-proj-deadline').value = daysFromNow(7);
+  setTimeout(()=>document.getElementById('inp-proj-name').focus(), 50);
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('inp-proj-name').value = '';
+}
+function addProject() {
+  const name = document.getElementById('inp-proj-name').value.trim();
+  const deadline = document.getElementById('inp-proj-deadline').value;
+  if (!name) return;
+  const colorIdx = state.projects.length % COLORS.length;
+  state.projects.push({ id: state.nextProjectId++, name, deadline: deadline||daysFromNow(7), colorIdx, open: true, tasks: [] });
+  closeModal();
+  render();
+}
+document.getElementById('inp-proj-name').addEventListener('keydown', e => { if(e.key==='Enter') addProject(); });
+document.getElementById('modal').addEventListener('click', e => { if(e.target===document.getElementById('modal')) closeModal(); });
+
+// Toast
+let toastTimeout;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// Date in topbar
+const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const now = new Date();
+document.getElementById('topbar-date').textContent = `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
+
+// Init
+render();
+updateTimerDisplay();
+</script>
+</body>
+</html>
